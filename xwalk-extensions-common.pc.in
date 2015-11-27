@@ -1,0 +1,9 @@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+
+Name: xwalk-extensions-common
+Description: Common libraries for Xwalk Extensions
+Version: @VERSION@
+Libs: -L${libdir} -lxwalk-extensions-common
+Cflags: -I${includedir}

@@ -1,0 +1,58 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
+PROJECT("xwalk-extensions-common")
+
+SET(VERSION 0.0.1)
+SET(VERSION_MAJOR 0)
+
+INCLUDE(FindPkgConfig)
+
+IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE "Release")
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
+SET(CMAKE_C_FLAGS_PROFILING    "-O2")
+SET(CMAKE_CXX_FLAGS_PROFILING  "-O2 -std=c++0x")
+SET(CMAKE_C_FLAGS_DEBUG        "-O0 -g")
+SET(CMAKE_CXX_FLAGS_DEBUG      "-O0 -std=c++0x -g")
+SET(CMAKE_C_FLAGS_RELEASE      "-O2 -g")
+SET(CMAKE_CXX_FLAGS_RELEASE    "-O2 -std=c++0x -g -fvisibility-inlines-hidden")
+SET(CMAKE_CXX_FLAGS_CCOV       "-O0 -std=c++0x -g --coverage")
+
+ADD_DEFINITIONS("-fPIC")
+ADD_DEFINITIONS("-Wall")                # Generate all warnings
+ADD_DEFINITIONS("-Wextra")              # Generate even more extra warnings
+ADD_DEFINITIONS("-Wno-variadic-macros") # Inhibit variadic macros warnings (needed for ORM)
+ADD_DEFINITIONS("-Wno-deprecated")      # No warnings about deprecated features
+ADD_DEFINITIONS("-std=c++0x")           # accept C++11x standard
+
+# common library
+SET(TARGET_COMMON_LIB ${PROJECT_NAME})
+INCLUDE_DIRECTORIES (
+  ${PROJECT_SOURCE_DIR}/src
+)
+ADD_LIBRARY(${TARGET_COMMON_LIB} SHARED
+  ${PROJECT_SOURCE_DIR}/src/xwalk/xwalk_extension.cc
+)
+SET_TARGET_PROPERTIES(${TARGET_COMMON_LIB}
+                      PROPERTIES SOVERSION ${VERSION_MAJOR})
+SET_TARGET_PROPERTIES(${TARGET_COMMON_LIB}
+                      PROPERTIES VERSION ${VERSION})
+INSTALL(TARGETS ${TARGET_COMMON_LIB}
+        DESTINATION ${LIB_INSTALL_DIR})
+
+# common header
+SET(PREFIX ${CMAKE_INSTALL_PREFIX})
+SET(LIBDIR ${LIB_INSTALL_DIR})
+SET(INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/include)
+CONFIGURE_FILE(${PROJECT_NAME}.pc.in ${PROJECT_NAME}.pc @ONLY)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
+        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/src/xwalk/xwalk_extension.h
+        DESTINATION include/xwalk)
+INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/src/xwalk/extensions
+        DESTINATION include/xwalk)
+
+# common tools
+INSTALL(DIRECTORY tools DESTINATION /usr/share/xwalk)
+
