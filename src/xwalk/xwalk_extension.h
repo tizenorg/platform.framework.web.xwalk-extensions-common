@@ -12,6 +12,7 @@
 #include <functional>
 
 #include "xwalk/extensions/public/XW_Extension.h"
+#include "xwalk/extensions/public/XW_Extension_Message_2.h"
 #include "xwalk/extensions/public/XW_Extension_EntryPoints.h"
 #include "xwalk/extensions/public/XW_Extension_Runtime.h"
 #include "xwalk/extensions/public/XW_Extension_SyncMessage.h"
@@ -58,6 +59,12 @@ class XWalkExtension;
         xw_extension, [](XW_Instance xw_instance, const char* msg) {           \
           xwalk::XWalkExtension::HandleMessage(                                \
               g_extension_##NAME, xw_instance, msg);                           \
+        });                                                                    \
+    g_extension_##NAME->messaging_interface_->RegisterBinaryMesssageCallback(  \
+        xw_extension, [](XW_Instance xw_instance,                              \
+                         const char* msg, const size_t size) {                 \
+          xwalk::XWalkExtension::HandleBinaryMessage(                          \
+              g_extension_##NAME, xw_instance, msg, size);                     \
         });                                                                    \
     g_extension_##NAME->sync_messaging_interface_->Register(                   \
         xw_extension,                                                          \
@@ -114,13 +121,16 @@ class XWalkExtension {
                             XW_Instance xw_instance, const char* msg);
   static void HandleSyncMessage(XWalkExtension* extension,
                                 XW_Instance xw_instance, const char* msg);
+  static void HandleBinaryMessage(XWalkExtension* extension,
+                                  XW_Instance xw_instance,
+                                  const char* msg, const size_t size);
 
   // Identifier of an extension
   XW_Extension xw_extension_;
 
   // XW_Extension interfaces.
   const XW_CoreInterface* core_interface_ = NULL;
-  const XW_MessagingInterface* messaging_interface_ = NULL;
+  const XW_MessagingInterface2* messaging_interface_ = NULL;
   const XW_Internal_SyncMessagingInterface* sync_messaging_interface_ = NULL;
   const XW_Internal_EntryPointsInterface* entry_points_interface_ = NULL;
   const XW_Internal_RuntimeInterface* runtime_interface_ = NULL;
@@ -136,6 +146,9 @@ class XWalkExtensionInstance {
   // Sends a message to javascript scope asyncronously.
   void PostMessage(const char* msg);
 
+  // Sends a binary message to javascript scope asyncronously.
+  void PostBinaryMessage(const char* msg, const size_t size);
+
   // Sends a reply of syncronous call to javascript scope immediately.
   void SendSyncReply(const char* reply);
 
@@ -147,6 +160,10 @@ class XWalkExtensionInstance {
 
   // Override this function to handle syncronous messages sent from javascript.
   virtual void HandleSyncMessage(const char* /*msg*/) {}
+
+  // Override this function to handle binary message sent from javascript.
+  virtual void HandleBinaryMessage(const char* /*msg*/,
+                                   const size_t /*size*/) {}
 
  private:
   friend class XWalkExtension;

@@ -25,11 +25,11 @@ bool XWalkExtension::InitializeInterfaces(XW_GetInterface get_interface) {
     return false;
   }
 
-  messaging_interface_ = reinterpret_cast<const XW_MessagingInterface*>(
-      get_interface(XW_MESSAGING_INTERFACE));
+  messaging_interface_ = reinterpret_cast<const XW_MessagingInterface2*>(
+      get_interface(XW_MESSAGING_INTERFACE_2));
   if (!messaging_interface_) {
     std::cerr <<
-        "Can't initialize extension: error getting Messaging interface.\n";
+        "Can't initialize extension: error getting Messaging interface 2.\n";
     return false;
   }
 
@@ -136,6 +136,18 @@ void XWalkExtension::HandleSyncMessage(
   instance->HandleSyncMessage(msg);
 }
 
+// static
+void XWalkExtension::HandleBinaryMessage(XWalkExtension* extension,
+                                         XW_Instance xw_instance,
+                                         const char* msg, const size_t size) {
+  XWalkExtensionInstance* instance =
+      reinterpret_cast<XWalkExtensionInstance*>(
+          extension->core_interface_->GetInstanceData(xw_instance));
+  if (!instance)
+    return;
+  instance->HandleBinaryMessage(msg, size);
+}
+
 XWalkExtensionInstance::XWalkExtensionInstance()
     : xw_instance_(0) {}
 
@@ -151,6 +163,19 @@ void XWalkExtensionInstance::PostMessage(const char* msg) {
   }
   if (extension_) {
     extension_->messaging_interface_->PostMessage(xw_instance_, msg);
+  }
+}
+
+void XWalkExtensionInstance::PostBinaryMessage(
+    const char* msg, const size_t size) {
+  if (!xw_instance_) {
+    std::cerr << "Ignoring PostMessage() in the constructor or after the "
+              << "instance was destroyed.";
+    return;
+  }
+  if (extension_) {
+    extension_->messaging_interface_->PostBinaryMessage(
+        xw_instance_, msg, size);
   }
 }
 
