@@ -4,6 +4,18 @@
     'extension_build_type%': 'Debug',
   },
   'target_defaults': {
+    'type': 'loadable_module',
+    'target_conditions': [
+      ['_type=="loadable_module"', {
+        'product_prefix': '',
+        'product_extension': 'xwalk',
+        'variables': {
+          'packages': [
+            'xwalk-extensions-common',
+          ],
+        },
+      }],
+    ],
     'conditions': [
       ['extension_build_type == "Release"', {
         'defines': ['NDEBUG', ],
