@@ -73,15 +73,23 @@ class XWalkExtension;
 
 namespace xwalk {
 
+// XWalkExtension is a super-class of all crosswalk extenions. It implements
+// interfaces to communicate with Crosswalk runtime.
 class XWalkExtension {
  public:
   XWalkExtension();
   virtual ~XWalkExtension();
 
+  // Override this function to initialize the sub-class of XWalkExtension.
+  // This function is called after registering the extension to Crosswalk
+  // runtime.
   virtual void Initialize() {}
 
+  // Override this function to return the sub-class of XWalkExtensionInstance.
   virtual XWalkExtensionInstance* CreateInstance();
 
+  // Gets variables provided by Crosswalk runtime.
+  // Note: This function should not be called in constructors of the sub-class.
   std::string GetRuntimeVariable(const char* var_name, unsigned len);
 
  private:
@@ -89,7 +97,10 @@ class XWalkExtension {
   friend int32_t ::XW_Initialize(XW_Extension extension,
                                  XW_GetInterface get_interface);
 
+  // Initializes callbackes of the interface for crosswalk extensions
   bool InitializeInterfaces(XW_GetInterface get_interface);
+
+  // Sets information of the extension to Crosswalk runtime.
   void InitializeInternal(const char* name, const char* jsapi,
                           const char** entry_points);
 
@@ -104,7 +115,10 @@ class XWalkExtension {
   static void HandleSyncMessage(XWalkExtension* extension,
                                 XW_Instance xw_instance, const char* msg);
 
+  // Identifier of an extension
   XW_Extension xw_extension_;
+
+  // XW_Extension interfaces.
   const XW_CoreInterface* core_interface_ = NULL;
   const XW_MessagingInterface* messaging_interface_ = NULL;
   const XW_Internal_SyncMessagingInterface* sync_messaging_interface_ = NULL;
@@ -112,25 +126,36 @@ class XWalkExtension {
   const XW_Internal_RuntimeInterface* runtime_interface_ = NULL;
 };
 
+
+// XWalkExtensionInstance is a super-class of instances created from extensions.
 class XWalkExtensionInstance {
  public:
   XWalkExtensionInstance();
   virtual ~XWalkExtensionInstance();
 
+  // Sends a message to javascript scope asyncronously.
   void PostMessage(const char* msg);
+
+  // Sends a reply of syncronous call to javascript scope immediately.
   void SendSyncReply(const char* reply);
 
+  // Override this function to initialize the sub-class of this class.
   virtual void Initialize() {}
-  virtual void HandleMessage(const char* /*msg*/) {}
-  virtual void HandleSyncMessage(const char* /*msg*/) {}
 
-  XW_Instance xw_instance() const { return xw_instance_; }
+  // Override this function to handle asyncronous messages sent from javascript.
+  virtual void HandleMessage(const char* /*msg*/) {}
+
+  // Override this function to handle syncronous messages sent from javascript.
+  virtual void HandleSyncMessage(const char* /*msg*/) {}
 
  private:
   friend class XWalkExtension;
 
+  // Indentifier of an instance
   XW_Instance xw_instance_;
-  XWalkExtension* extension_;
+
+  // Pointer of parent extension
+  const XWalkExtension* extension_;
 };
 
 }  // namespace xwalk
