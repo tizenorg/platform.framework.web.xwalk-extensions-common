@@ -18,6 +18,8 @@ Summary:  Development package of xwalk-extensions-common
 Group:    Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: python
+Requires: sed
+Requires: cpp
 Provides: gyp_xwext
 
 %description devel
