@@ -12,7 +12,7 @@ const char %s[] = { %s, 0 };
 """
 
 js_code = sys.argv[1]
-cmd = "sed -e 's#//\##\##g' " + js_code + " | cpp -E -P "
+cmd = "sed -e 's#^//\##\##g' " + js_code + " | cpp -E -P "
 lines = subprocess.check_output(cmd, shell=True)
 c_code = ', '.join(str(ord(c)) for c in lines)
 
