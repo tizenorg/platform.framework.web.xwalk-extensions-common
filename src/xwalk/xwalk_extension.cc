@@ -6,6 +6,8 @@
 #include "xwalk/xwalk_extension.h"
 
 #include <assert.h>
+#include <string.h>
+
 #include <iostream>
 #include <vector>
 
@@ -148,8 +150,10 @@ void XWalkExtension::HandleBinaryMessage(XWalkExtension* extension,
   instance->HandleBinaryMessage(msg, size);
 }
 
-XWalkExtensionInstance::XWalkExtensionInstance()
-    : xw_instance_(0) {}
+XWalkExtensionInstance::XWalkExtensionInstance(
+    const std::string& key_cmd, const std::string& key_err)
+    : xw_instance_(0), key_cmd_(key_cmd), key_err_(key_err) {
+}
 
 XWalkExtensionInstance::~XWalkExtensionInstance() {
   assert(xw_instance_ == 0);
@@ -158,7 +162,7 @@ XWalkExtensionInstance::~XWalkExtensionInstance() {
 void XWalkExtensionInstance::PostMessage(const char* msg) {
   if (!xw_instance_) {
     std::cerr << "Ignoring PostMessage() in the constructor or after the "
-              << "instance was destroyed.";
+              << "instance was destroyed.\n";
     return;
   }
   if (extension_) {
@@ -170,7 +174,7 @@ void XWalkExtensionInstance::PostBinaryMessage(
     const char* msg, const size_t size) {
   if (!xw_instance_) {
     std::cerr << "Ignoring PostMessage() in the constructor or after the "
-              << "instance was destroyed.";
+              << "instance was destroyed.\n";
     return;
   }
   if (extension_) {
@@ -182,12 +186,68 @@ void XWalkExtensionInstance::PostBinaryMessage(
 void XWalkExtensionInstance::SendSyncReply(const char* reply) {
   if (!xw_instance_) {
     std::cerr << "Ignoring SendSyncReply() in the constructor or after the "
-              << "instance was destroyed.";
+              << "instance was destroyed.\n";
     return;
   }
   if (extension_) {
     extension_->sync_messaging_interface_->SetSyncReply(xw_instance_, reply);
   }
+}
+
+void XWalkExtensionInstance::RegisterMethod(
+    const std::string& name, MappedMethod func) {
+  method_map_[name] = func;
+}
+
+void XWalkExtensionInstance::DispatchMethod(
+    const Json::Value& args, Json::Value& reply) {
+  std::string method = args.get(key_cmd_, "").asString();
+  if (method.empty()) {
+    reply[key_err_] = "Invalid arguments. The key for cmd was not found.";
+    return;
+  }
+  auto it = method_map_.find(method);
+  if (method_map_.end() == it) {
+    reply[key_err_] = "Can not find dispatchable method.";
+    return;
+  }
+
+  it->second(args, reply);
+}
+
+void XWalkExtensionInstance::HandleMessage(const char* msg) {
+  Json::Value args;
+  Json::Reader reader;
+  if (!reader.parse(msg, msg + strlen(msg), args)) {
+    std::cerr << "Ignoring message. Can't parse msessage. "
+              << reader.getFormattedErrorMessages() << "\n";
+    return;
+  }
+
+  Json::Value reply;
+  DispatchMethod(args, reply);
+
+  if (!reply["error"].isNull()) {
+    std::cerr << "Error during process asynchronous function. "
+              << reply["error"].asString() << "\n";
+    // TODO(WonyoungChoi): PostMessage this error as uncatchable?
+  }
+}
+
+void XWalkExtensionInstance::HandleSyncMessage(const char* msg) {
+  Json::Value args;
+  Json::Reader reader;
+  if (!reader.parse(msg, msg + strlen(msg), args)) {
+    std::cerr << "Ignoring message. Can't parse msessage. "
+              << reader.getFormattedErrorMessages() << "\n";
+    return;
+  }
+
+  Json::Value reply;
+  DispatchMethod(args, reply);
+
+  Json::FastWriter writer;
+  SendSyncReply(writer.write(reply).c_str());
 }
 
 }  // namespace xwalk

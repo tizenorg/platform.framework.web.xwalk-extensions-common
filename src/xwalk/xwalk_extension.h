@@ -1,5 +1,5 @@
 // Copyright (c) 2013 Intel Corporation. All rights reserved.
-// Copyright (c) 2015 Samsung Electronics Co., Ltd. All rights reserved.
+// Copyright (c) 2016 Samsung Electronics Co., Ltd. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,8 +8,11 @@
 
 #include <sys/types.h>
 
+#include <map>
 #include <string>
 #include <functional>
+
+#include <json/json.h>
 
 #include "xwalk/extensions/public/XW_Extension.h"
 #include "xwalk/extensions/public/XW_Extension_Message_2.h"
@@ -78,6 +81,10 @@ class XWalkExtension;
   }                                                                            \
   }
 
+#define REGISTER_XWALK_METHOD(m, o, f) \
+    RegisterMethod(m, \
+        std::bind(f, o, std::placeholders::_1, std::placeholders::_2));
+
 namespace xwalk {
 
 // XWalkExtension is a super-class of all crosswalk extenions. It implements
@@ -140,7 +147,10 @@ class XWalkExtension {
 // XWalkExtensionInstance is a super-class of instances created from extensions.
 class XWalkExtensionInstance {
  public:
-  XWalkExtensionInstance();
+  typedef std::function<void(const Json::Value&, Json::Value&)> MappedMethod;
+
+  XWalkExtensionInstance(const std::string& key_cmd = std::string("cmd"),
+                         const std::string& key_err = std::string("error"));
   virtual ~XWalkExtensionInstance();
 
   // Sends a message to javascript scope asyncronously.
@@ -152,14 +162,17 @@ class XWalkExtensionInstance {
   // Sends a reply of syncronous call to javascript scope immediately.
   void SendSyncReply(const char* reply);
 
+  // Register synchronous method for mapping
+  void RegisterMethod(const std::string& name, MappedMethod func);
+
   // Override this function to initialize the sub-class of this class.
   virtual void Initialize() {}
 
   // Override this function to handle asyncronous messages sent from javascript.
-  virtual void HandleMessage(const char* /*msg*/) {}
+  virtual void HandleMessage(const char* msg);
 
   // Override this function to handle syncronous messages sent from javascript.
-  virtual void HandleSyncMessage(const char* /*msg*/) {}
+  virtual void HandleSyncMessage(const char* msg);
 
   // Override this function to handle binary message sent from javascript.
   virtual void HandleBinaryMessage(const char* /*msg*/,
@@ -173,6 +186,18 @@ class XWalkExtensionInstance {
 
   // Pointer of parent extension
   const XWalkExtension* extension_;
+
+  // Key name for cmd of json message
+  std::string key_cmd_;
+
+  // Key name for error of json message
+  std::string key_err_;
+
+  // Map for mapped methods
+  std::map<std::string, MappedMethod> method_map_;
+
+  // Call a mapped method internally
+  void DispatchMethod(const Json::Value& args, Json::Value& reply);
 };
 
 }  // namespace xwalk
