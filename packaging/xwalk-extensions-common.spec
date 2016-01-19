@@ -9,6 +9,7 @@ Source0:    %{name}-%{version}.tar.gz
 Source1:    %{name}.manifest
 
 BuildRequires: cmake
+BuildRequires: pkgconfig(jsoncpp)
 
 %description
 Common modules and tools for Crosswalk Extensions
