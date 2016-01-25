@@ -33,50 +33,49 @@ class XWalkExtension;
 #define EXPORT_XWALK_EXTENSION_EX(NAME, CLASS, ENTRY_POINTS)                   \
   extern "C" {                                                                 \
   extern const char kSourceJSAPI[];                                            \
-  xwalk::XWalkExtension* g_extension_##NAME;                                   \
+  xwalk::XWalkExtension* g_xwalk_extension;                                    \
   int32_t XW_Initialize(XW_Extension xw_extension,                             \
                         XW_GetInterface get_interface) {                       \
-    g_extension_##NAME = new CLASS;                                            \
-    g_extension_##NAME->xw_extension_ = xw_extension;                          \
-    if (!g_extension_##NAME->InitializeInterfaces(get_interface)) {            \
+    g_xwalk_extension = new CLASS;                                             \
+    g_xwalk_extension->xw_extension_ = xw_extension;                           \
+    if (!g_xwalk_extension->InitializeInterfaces(get_interface)) {             \
       return XW_ERROR;                                                         \
     }                                                                          \
-    const XW_CoreInterface* core = g_extension_##NAME->core_interface_;        \
-    core->RegisterShutdownCallback(                                            \
+    g_xwalk_extension->core_interface_->RegisterShutdownCallback(              \
       xw_extension, [](XW_Extension xw_extension) {                            \
         xwalk::XWalkExtension::OnShutdown(xw_extension);                       \
-        if (g_extension_##NAME) {                                              \
-          delete g_extension_##NAME;                                           \
-          g_extension_##NAME = nullptr;                                        \
+        if (g_xwalk_extension) {                                               \
+          delete g_xwalk_extension;                                            \
+          g_xwalk_extension = nullptr;                                         \
         }                                                                      \
       });                                                                      \
-    core->RegisterInstanceCallbacks(                                           \
+    g_xwalk_extension->core_interface_->RegisterInstanceCallbacks(             \
         xw_extension, [](XW_Instance xw_instance) {                            \
           xwalk::XWalkExtension::OnInstanceCreated(                            \
-              g_extension_##NAME, xw_instance);                                \
+              g_xwalk_extension, xw_instance);                                 \
         }, [](XW_Instance xw_instance) {                                       \
           xwalk::XWalkExtension::OnInstanceDestroyed(                          \
-              g_extension_##NAME, xw_instance);                                \
+              g_xwalk_extension, xw_instance);                                 \
         });                                                                    \
-    g_extension_##NAME->messaging_interface_->Register(                        \
+    g_xwalk_extension->messaging_interface_->Register(                         \
         xw_extension, [](XW_Instance xw_instance, const char* msg) {           \
           xwalk::XWalkExtension::HandleMessage(                                \
-              g_extension_##NAME, xw_instance, msg);                           \
+              g_xwalk_extension, xw_instance, msg);                            \
         });                                                                    \
-    g_extension_##NAME->messaging_interface_->RegisterBinaryMesssageCallback(  \
+    g_xwalk_extension->messaging_interface_->RegisterBinaryMesssageCallback(   \
         xw_extension, [](XW_Instance xw_instance,                              \
                          const char* msg, const size_t size) {                 \
           xwalk::XWalkExtension::HandleBinaryMessage(                          \
-              g_extension_##NAME, xw_instance, msg, size);                     \
+              g_xwalk_extension, xw_instance, msg, size);                      \
         });                                                                    \
-    g_extension_##NAME->sync_messaging_interface_->Register(                   \
+    g_xwalk_extension->sync_messaging_interface_->Register(                    \
         xw_extension,                                                          \
         [](XW_Instance xw_instance, const char* msg) {                         \
           xwalk::XWalkExtension::HandleSyncMessage(                            \
-              g_extension_##NAME, xw_instance, msg);                           \
+              g_xwalk_extension, xw_instance, msg);                            \
         });                                                                    \
-    g_extension_##NAME->InitializeInternal(#NAME, kSourceJSAPI, ENTRY_POINTS); \
-    g_extension_##NAME->Initialize();                                          \
+    g_xwalk_extension->InitializeInternal(#NAME, kSourceJSAPI, ENTRY_POINTS);  \
+    g_xwalk_extension->Initialize();                                           \
     return XW_OK;                                                              \
   }                                                                            \
   }
@@ -87,7 +86,7 @@ class XWalkExtension;
 
 namespace xwalk {
 
-// XWalkExtension is a super-class of all crosswalk extenions. It implements
+// XWalkExtension is a super-class of all crosswalk extensions. It implements
 // interfaces to communicate with Crosswalk runtime.
 class XWalkExtension {
  public:
@@ -158,7 +157,7 @@ class XWalkExtensionInstance {
   // Sends a binary message to javascript scope asyncronously.
   void PostBinaryMessage(const char* msg, const size_t size);
 
-  // Sends a reply of syncronous call to javascript scope immediately.
+  // Sends a reply of synchronous call to javascript scope immediately.
   void SendSyncReply(const char* reply);
 
   // Register synchronous method for mapping
@@ -167,13 +166,14 @@ class XWalkExtensionInstance {
   // Override this function to initialize the sub-class of this class.
   virtual void Initialize() {}
 
-  // Override this function to handle asyncronous messages sent from javascript.
+  // Override this function to handle asynchronous messages sent
+  // from javascript.
   virtual void HandleMessage(const char* msg);
 
-  // Override this function to handle syncronous messages sent from javascript.
+  // Override this function to handle synchronous messages sent from javascript.
   virtual void HandleSyncMessage(const char* msg);
 
-  // Override this function to handle binary message sent from javascript.
+  // Override this function to handle binary messages sent from javascript.
   virtual void HandleBinaryMessage(const char* /*msg*/,
                                    const size_t /*size*/) {}
 
