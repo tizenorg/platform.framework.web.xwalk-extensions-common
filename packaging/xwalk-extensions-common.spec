@@ -22,6 +22,7 @@ Requires: python
 Requires: sed
 Requires: cpp
 Provides: gyp_xwext
+Provides: xwalk-gyp
 
 %description devel
 Development package of xwalk-extensions-common
@@ -51,6 +52,8 @@ cat LICENSE.BSD >> %{buildroot}%{_datadir}/license/%{name}
 mkdir -p %{buildroot}%{_bindir}
 ln -s /usr/share/xwalk/tools/build/gyp_xwext \
       %{buildroot}%{_bindir}/gyp_xwext
+ln -s /usr/share/xwalk/tools/build/gyp_xwext \
+      %{buildroot}%{_bindir}/xwalk-gyp
 
 cd cmake_build_tmp
 %make_install
@@ -68,6 +71,7 @@ rm -rf %{buildroot}
 %{_libdir}/lib%{name}.so
 %{_libdir}/pkgconfig/%{name}.pc
 %{_bindir}/gyp_xwext
+%{_bindir}/xwalk-gyp
 /usr/share/xwalk/tools/
 %attr(0755,root,root) /usr/share/xwalk/tools/gyp/gyp
 %attr(0755,root,root) /usr/share/xwalk/tools/build/gyp_xwext
