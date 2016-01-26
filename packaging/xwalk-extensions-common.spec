@@ -21,6 +21,7 @@ Requires: %{name} = %{version}-%{release}
 Requires: python
 Requires: sed
 Requires: cpp
+Requires: pkgconfig(jsoncpp)
 Provides: gyp_xwext
 Provides: xwalk-gyp
 
