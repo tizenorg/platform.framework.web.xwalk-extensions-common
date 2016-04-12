@@ -1,0 +1,10 @@
+
+# Usages tizen.echo
+
+var ret = tizen.echo.syncEcho("Hello Xwalk!");
+console.log(ret);
+
+tizen.echo.echo("Hello Xwalk! Async mode", function(msg) {
+  console.log(msg);
+});
+

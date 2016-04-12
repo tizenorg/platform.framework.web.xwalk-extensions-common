@@ -1,0 +1,7 @@
+[
+  {
+    "name":"tizen.echo",
+    "lib":"libecho.so",
+    "entry_points":[]
+  }
+]
